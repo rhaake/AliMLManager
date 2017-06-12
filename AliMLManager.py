@@ -8,14 +8,14 @@ def DoTraining(model, dataset, generator, numEpochs, numEventsTraining, numEvent
   ###############
   # Setup jet loader instance
   dataLoader = AliMLLoader.AliMLDataLoader(generator, model.fRequestedData, eventChunkSize)
-  dataLoader.FastForward(eventOffset)
   dataLoader.fMaxProducedSamples = numEventsTraining
 
   # add classes defined in the dataset
   for dclass in dataset:
     dataLoader.AddClass(dclass['datasets'], dclass['cuts'])
 
-  ###############
+  dataLoader.FastForward(eventOffset)
+
   # Load validation data
   logging.info('Loading validation data... ')
   (mergedValidationData, mergedValidationTruth, samplesPerClass, _)  = dataLoader.GetDataChunk(numEventsValidation)
@@ -35,7 +35,7 @@ def DoTraining(model, dataset, generator, numEpochs, numEventsTraining, numEvent
   # - Chunks loaded asynchronously into the queue
 
   if int(numEventsTraining/eventChunkSize) == 1:
-    logging.info('Training of {:d} samples in one chunk...'.format(numEventsTraining*len(dataLoader.fClasses)))
+    logging.info('Training of {:d} samples in one chunk...'.format(numEventsTraining*len(dataset)))
     logging.info('Loading training data... ')
     array = dataLoader.GetDataChunk(numEventsTraining)
     model.TrainModel(array[0], array[1], X_test, y_test, mergedValidationData, mergedValidationTruth, numEpochs=numEpochs)
@@ -55,4 +55,12 @@ def DoTraining(model, dataset, generator, numEpochs, numEventsTraining, numEvent
     model.SaveModel()
 
   ###############
-  dataLoader.ResetCounters()
+  try:
+    dataLoader.ResetCounters()
+  except:
+    pass
+
+#######################################################################################################
+def DoExtractData():
+  """TODO: To be implemented"""
+

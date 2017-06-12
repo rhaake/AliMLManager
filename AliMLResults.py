@@ -1,6 +1,6 @@
 #  results.py
 
-import numpy, logging
+import numpy, logging, math
 import ROOT
 import AliMLHelpers, AliMLAnalysisTools
 
@@ -126,7 +126,6 @@ class AliMLModelResultsRegressionTask(AliMLModelResultsBase):
     AliMLModelResultsBase.__init__(self, name)
 
     self.fHistoryStdDeviation               = []
-    self.fHistoryMeanDeviation              = []
     self.fHistoryMeanAbsDeviation           = []
     self.fHistoryMeanRelDeviation           = []
 
@@ -151,12 +150,9 @@ class AliMLModelResultsRegressionTask(AliMLModelResultsBase):
       relDeviation += (trueValue - predicted)/trueValue if trueValue else 0
       sumOfSquares += (trueValue - predicted) * (trueValue - predicted)
 
-    # In case of more than one epochs for this result, add the corresponding number of history entries
-    for i in range(len(loss_train)):
-      self.fHistoryStdDeviation.append(1./len(predictions) * math.sqrt(sumOfSquares))
-      self.fHistoryMeanDeviation.append(1./len(predictions) * deviation)
-      self.fHistoryMeanRelDeviation.append(1./len(predictions) * relDeviation)
-      self.fHistoryMeanAbsDeviation.append(1./len(predictions) * absDeviation)
+    self.fHistoryStdDeviation.append(1./len(predictions) * math.sqrt(sumOfSquares))
+    self.fHistoryMeanRelDeviation.append(1./len(predictions) * relDeviation)
+    self.fHistoryMeanAbsDeviation.append(1./len(predictions) * absDeviation)
 
     self.CreatePlots()
 
@@ -167,8 +163,6 @@ class AliMLModelResultsRegressionTask(AliMLModelResultsBase):
 
     ##### Save histograms/plots
     epochs    = range(len(self.fHistoryNumberEvents))
-    # Mean deviation
-    AliMLHelpers.SavePlot('./Results/{:s}-MeanDeviation.png'.format(self.fModelName), 'MeanDeviation', x=epochs, y=(self.fHistoryMeanDeviation,), functionlabels=('Mean deviation',), legendloc='lower right')
     AliMLHelpers.SavePlot('./Results/{:s}-MeanAbsDeviation.png'.format(self.fModelName), 'MeanAbsDeviation', x=epochs, y=(self.fHistoryMeanAbsDeviation,), functionlabels=('Mean abs. deviation',), legendloc='lower right')
     AliMLHelpers.SavePlot('./Results/{:s}-MeanRelDeviation.png'.format(self.fModelName), 'MeanRelDeviation', x=epochs, y=(self.fHistoryMeanRelDeviation,), functionlabels=('Mean rel. deviation',), legendloc='lower right')
     AliMLHelpers.SavePlot('./Results/{:s}-StdDeviation.png'.format(self.fModelName), 'StdDeviation', x=epochs, y=(self.fHistoryStdDeviation,), functionlabels=('Std. deviation',), legendloc='lower right')

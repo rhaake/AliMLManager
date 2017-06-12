@@ -16,11 +16,14 @@ kImageR = 0.3
 kImageDrawCorrelationLine = False
 kImageDrawJTLine = False
 kImageUseL2Norm = True
+# 0: Lxy, 1: Dispersion, 2: SLxy, 3: Chi2
+kSortModeSecondaryVertices = 0
+kSecondaryVertexPrescaling = False
 
 gDataset_bJets     = None
 gDataset_cJets     = None
 gDataset_lightJets = None
-
+gDataset_allJets   = None
 
 #__________________________________________________________________________________________________________
 def GetGenerator():
@@ -32,7 +35,7 @@ def GetDataset(index):
   """Dataset in framework-readable format"""
 
   if index == 0:
-    logging.info('Using b-jets vs. c-/udsg-jets (20/80) dataset (15-120 GeV/c)')
+    logging.info('Using b-jets vs. c-/udsg-jets (10/90) dataset (15-120 GeV/c)')
 
     # Define the parts of the dataset
     gDataset_bJets     = {'file': '/opt/alice/MachineLearning/Data/LHC14g3a.root', 'treename': 'bJets', 'weight': 1.0}
@@ -46,12 +49,98 @@ def GetDataset(index):
     classes.append({'datasets': [gDataset_lightJets, gDataset_cJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, ]})
     return classes
 
+  elif index == 1:
+    logging.info('Using s-jets vs. udg-jets dataset (15-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_sJets     = {'file': '/opt/alice/MachineLearning/Data/LHC14g3b.root', 'treename': 'lightJets', 'weight': 1.0}
+    gDataset_lightJets = {'file': '/opt/alice/MachineLearning/Data/LHC14g3b.root', 'treename': 'lightJets', 'weight': 1.0}
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_sJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, {'branch': 'Jets', 'var': 'MotherHadronMatching', 'isint': 3}]})
+    classes.append({'datasets': [gDataset_lightJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, {'branch': 'Jets', 'var': 'MotherHadronMatching', 'isint': 1}]})
+    return classes
+
+  elif index == 2:
+    logging.info('Using data jets from LHC13b+LHC13c dataset (20-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_PA = {'file': '/opt/alice/MachineLearning/Data/DataPA.root', 'treename': 'allJets', 'weight': 1.0}
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_PA], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, ]})
+    return classes
+
+  elif index == 3:
+    logging.info('Using c-jets vs. b-/udsg-jets dataset (10/90) (15-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_cJets     = {'file': '/opt/alice/MachineLearning/Data/LHC14g3a.root', 'treename': 'cJets', 'weight': 1.0}
+    gDataset_bJets     = {'file': '/opt/alice/MachineLearning/Data/LHC14g3a.root', 'treename': 'bJets', 'weight': 0.1}
+    gDataset_lightJets = {'file': '/opt/alice/MachineLearning/Data/LHC14g3b.root', 'treename': 'lightJets', 'weight': 0.9}
+
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_cJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, ]})
+    classes.append({'datasets': [gDataset_lightJets, gDataset_bJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, ]})
+    return classes
+
+  elif index == 4:
+    logging.info('Using PbPb datajets (20-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_LHC11h = {'file': '/opt/alice/MachineLearning/Data/LHC11h.root', 'treename': 'allJets', 'weight': 1.0}
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_LHC11h], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 20., 'max': 120.}, ]})
+    return classes
+
+  elif index == 5:
+    logging.info('Using pp 7 TeV jets (10d+10e) (20-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_PP = {'file': '/opt/alice/MachineLearning/Data/DataPP.root', 'treename': 'allJets', 'weight': 1.0}
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_PP], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, ]})
+    return classes
+
+  elif index == 6:
+    logging.info('Using data jets from LHC16q+t dataset (15-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_PA = {'file': '/opt/alice/MachineLearning/Data/DataPA_2016.root', 'treename': 'allJets', 'weight': 1.0}
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_PA], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 15., 'max': 120.}, ]})
+    return classes
+
+  elif index == 7:
+    logging.info('Using g/q dataset (PYTHIA LHC13b4_plus, 20-120 GeV/c)')
+
+    # Define the parts of the dataset
+    gDataset_gJets = {'file': '/opt/alice/MachineLearning/Data/LHC13b4_plus.root', 'treename': 'gluonJets', 'weight': 1.0}
+    gDataset_qJets = {'file': '/opt/alice/MachineLearning/Data/LHC13b4_plus.root', 'treename': 'quarkJets', 'weight': 1.0}
+
+    # Define dataset classes & their cuts
+    classes = []
+    classes.append({'datasets': [gDataset_qJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 20., 'max': 120.}, {'branch': 'Jets', 'var': 'MotherHadronMatching', 'isint': [1,3]}]}) # u,d,s w/o b,c
+    classes.append({'datasets': [gDataset_gJets], 'cuts': [{'branch': 'Jets', 'var': 'Pt', 'min': 20., 'max': 120.}, {'branch': 'Jets', 'var': 'MotherHadronMatching', 'isint': 1}]}) # g w/o b,c contrib
+    return classes
+
+
   else:
     logging.error('Error: Dataset {:d} not defined!'.format(index))
     return []
 
 #__________________________________________________________________________________________________________
-def GetModel(scheme, loadModel):
+def GetModel(scheme, loadModel, verbose=True):
   """Model definition"""
   # Instantiate and load model on-demand
   myModel = AliMLModels.AliMLKerasModel(2, GetGenerator()) 
@@ -61,11 +150,113 @@ def GetModel(scheme, loadModel):
   # Define demanded model
   if scheme == 'HQ_Deep_B':
     if not loadModel:
-      myModel.AddBranchDense(4,128,0.1,inputType='shapes')
-      myModel.AddBranchCNN1D([128,64,64], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_impactchargedjt')
-      myModel.AddBranchCNN1D([128,64,64], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_etaphir')
-      myModel.AddBranchCNN1D([64,128,256], [2,0,0], 1, [8,4,2], 0.1, inputType='secVtx_novtxmass')
-      myModel.SetFinalLayer(4, 128,0.25)
+      myModel.AddBranchDense(5,64,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.0001
+
+  elif scheme == 'HQ_Simple_B':
+    if not loadModel:
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='secVtx')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.0001
+
+  elif scheme == 'HQ_SimpleConst_B':
+    if not loadModel:
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.00001
+
+  elif scheme == 'HQ_SimpleConstImpact_B':
+    if not loadModel:
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.00001
+
+  elif scheme == 'HQ_SimpleConstImpact_C':
+    if not loadModel:
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.00001
+
+  elif scheme == 'HQ_SimpleAll_B':
+    if not loadModel:
+      myModel.AddBranchDense(5,64,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.00001
+
+
+  elif scheme == 'HQ_Simple_C_LxySorted':
+    if not loadModel:
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='secVtx')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+    myModel.fLearningRate = 0.0001
+
+  elif scheme == 'HQ_Deep_C':
+    if not loadModel:
+      myModel.AddBranchDense(5,64,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
 
       myModel.fInit = 'he_uniform'
       myModel.fOptimizer = 'adam'
@@ -73,23 +264,96 @@ def GetModel(scheme, loadModel):
       myModel.CreateModel(scheme)
       myModel.fBatchSize = 512
       myModel.fLearningRate = 0.0001
-  elif scheme == 'HQ_Shallow_FC':
+
+  elif scheme == 'LQ_Deep_S':
     if not loadModel:
-      myModel.AddBranchDense(4, 64, 0.1, inputType='secVtx_significantlxy')
-      myModel.AddBranchDense(4, 64, 0.1, inputType='secVtx_dispersion')
-      myModel.AddBranchDense(4, 64, 0.1, inputType='secVtx_chi2')
-      myModel.AddBranchDense(4, 64, 0.1, inputType='secVtx_l')
-      myModel.SetFinalLayer(4, 128,0.25)
+      myModel.AddBranchDense(5,64,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='secVtx_novtxmass')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
       myModel.fInit = 'he_uniform'
       myModel.fOptimizer = 'adam'
       myModel.fLossFunction = 'binary_crossentropy'
       myModel.CreateModel(scheme)
       myModel.fBatchSize = 512
-      myModel.fLearningRate = 0.0001
+      myModel.fLearningRate = 0.001
+
+  elif scheme == 'HQ_Simple_C':
+    if not loadModel:
+      #myModel.AddBranchDense(4,128,0.1,inputType='shapes')
+      #myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_impactchargedjt')
+      #myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_etaphir')
+      #myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_pid')
+      #myModel.AddBranchCNN1D([64,128,128], [2,0,0], 1, [8,4,2], 0.1, inputType='secVtx_novtxmass')
+      myModel.AddBranchDense(4,128,0.1,inputType='secVtx_lxy')
+      myModel.AddBranchDense(4,128,0.1,inputType='secVtx_sigmaxy')
+      myModel.AddBranchDense(4,128,0.1,inputType='secVtx_dispersion')
+      myModel.AddBranchDense(4,128,0.1,inputType='secVtx_significantlxy')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+      myModel.fLearningRate = 0.001
+
+  elif scheme == 'HQ_Deep_B_BC_Adamax':
+    if not loadModel:
+      myModel.AddBranchDense(4,128,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_pid')
+      myModel.AddBranchCNN1D([64,128,128], [2,0,0], 1, [8,4,2], 0.1, inputType='secVtx_novtxmass')
+      myModel.SetFinalLayer(4, 128,0.25)
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adamax'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+      myModel.fLearningRate = 0.002
+  elif scheme == 'HQ_Deep_B_BC_RMSprop':
+    if not loadModel:
+      myModel.AddBranchDense(4,128,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([128,64,32], [2,0,2], 1, [4,2,2], 0.1, inputType='constituents_pid')
+      myModel.AddBranchCNN1D([64,128,128], [2,0,0], 1, [8,4,2], 0.1, inputType='secVtx_novtxmass')
+      myModel.SetFinalLayer(4, 128,0.25)
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'rmsprop'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+      myModel.fLearningRate = 0.001
+
+
+  elif scheme == 'QG_Deep':
+    if not loadModel:
+      myModel.AddBranchDense(5,64,0.1,inputType='shapes')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_etaphir')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_impactchargedjt')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='secVtx')
+      myModel.AddBranchCNN1D([16,32,64,96,64], [2,0,0,2,0], 1, [2,2,2,2,2], 0.1, inputType='constituents_pid')
+      myModel.SetFinalLayer(4, 128,0.25, 'ridge')
+
+      myModel.fInit = 'he_uniform'
+      myModel.fOptimizer = 'adam'
+      myModel.fLossFunction = 'binary_crossentropy'
+      myModel.CreateModel(scheme)
+      myModel.fBatchSize = 512
+      myModel.fLearningRate = 0.001
+
   else:
     logging.error('Error: Model scheme {:s} not defined!'.format(scheme))
 
-  myModel.PrintProperties()
+  if verbose:
+    myModel.PrintProperties()
   return myModel
 
 
@@ -134,7 +398,7 @@ class AliMLJetDataGenerator:
       elif dtype == 'chargedimages':
         data = (self.GetJetImageWithCharge(rawDataJet))
       elif dtype == 'shapes':
-        data = ([rawDataJet.Pt(), self.GetJetShape('Mass', rawData), self.GetJetShape('Dispersion', rawData), self.GetJetShape('Radial', rawData), self.GetJetShape('LeSub', rawData), self.GetJetShape('ConstPtDeviation', rawData), rawDataJet.GetNumbersOfConstituents()])
+        data = ([rawDataJet.Pt(), rawDataJet.Mass(), self.GetJetShape('Dispersion', rawData), self.GetJetShape('Radial', rawData), self.GetJetShape('LeSub', rawData), self.GetJetShape('ConstPtDeviation', rawData), rawDataJet.GetNumbersOfConstituents()])
       elif dtype == 'constituents':
         data = (self.GetJetConstituents(0, rawDataJet))
       elif dtype == 'constituents_ptjt':
@@ -151,6 +415,8 @@ class AliMLJetDataGenerator:
         data = (self.GetJetConstituents(6, rawDataJet))
       elif dtype == 'constituents_impactchargedjt':
         data = (self.GetJetConstituents(7, rawDataJet))
+      elif dtype == 'constituents_pid':
+        data = (self.GetJetConstituents(8, rawDataJet))
       elif dtype == 'histogrampt':
         data = (self.GetHistogramJetConstituent('pt', rawDataJet))
       elif dtype == 'histogramr':
@@ -163,10 +429,10 @@ class AliMLJetDataGenerator:
         data = (self.GetSecondaryVertices(rawDataJet, useVtxMass=True))
       elif dtype == 'secVtx_novtxmass':
         data = (self.GetSecondaryVertices(rawDataJet, useVtxMass=False))
-      elif dtype in ['secVtx_lxy', 'secVtx_sigmaxy', 'secVtx_dispersion', 'secVtx_chi2', 'secVtx_l', 'secVtx_significantlxy']:
-        data = (self.GetSecondaryVerticesProperty(rawDataJet, ['secVtx_lxy', 'secVtx_sigmaxy', 'secVtx_dispersion', 'secVtx_chi2', 'secVtx_l', 'secVtx_significantlxy'].index(dtype)))
-      elif dtype in ['secVtx_lxy_2D', 'secVtx_sigmaxy_2D', 'secVtx_dispersion_2D', 'secVtx_chi2_2D', 'secVtx_l_2D', 'secVtx_significantlxy_2D']:
-        data = (self.GetSecondaryVerticesProperty(rawDataJet, ['secVtx_lxy_2D', 'secVtx_sigmaxy_2D', 'secVtx_dispersion_2D', 'secVtx_chi2_2D', 'secVtx_l_2D', 'secVtx_significantlxy_2D'].index(dtype), in2D=True))
+      elif dtype in ['secVtx_lxy', 'secVtx_sigmaxy', 'secVtx_dispersion', 'secVtx_chi2', 'secVtx_m', 'secVtx_significantlxy']:
+        data = (self.GetSecondaryVerticesProperty(rawDataJet, ['secVtx_lxy', 'secVtx_sigmaxy', 'secVtx_dispersion', 'secVtx_chi2', 'secVtx_m', 'secVtx_significantlxy'].index(dtype)))
+      elif dtype in ['secVtx_lxy_2D', 'secVtx_sigmaxy_2D', 'secVtx_dispersion_2D', 'secVtx_chi2_2D', 'secVtx_m_2D', 'secVtx_significantlxy_2D']:
+        data = (self.GetSecondaryVerticesProperty(rawDataJet, ['secVtx_lxy_2D', 'secVtx_sigmaxy_2D', 'secVtx_dispersion_2D', 'secVtx_chi2_2D', 'secVtx_m_2D', 'secVtx_significantlxy_2D'].index(dtype), in2D=True))
       elif dtype == 'production_vertices':
         data = (self.GetProductionVertices(rawDataJet))
       # Save data to cache and return it
@@ -208,6 +474,8 @@ class AliMLJetDataGenerator:
       return (kNumConstituents, 3)
     elif inputType=='constituents_pidjtr':
       return (kNumConstituents, 6)
+    elif inputType=='constituents_pid':
+      return (kNumConstituents, 4)
     elif inputType=='images':
       return (1, kImageResolution, kImageResolution)
     elif inputType=='chargedimages':
@@ -223,12 +491,12 @@ class AliMLJetDataGenerator:
     elif inputType=='jetprop':
       return (3,)
     elif inputType=='secVtx':
-      return (kNumSecondaryVtx, 9)
-    elif inputType=='secVtx_novtxmass':
       return (kNumSecondaryVtx, 8)
-    elif inputType in ['secVtx_lxy', 'secVtx_sigmaxy', 'secVtx_dispersion', 'secVtx_chi2', 'secVtx_l', 'secVtx_significantlxy']:
+    elif inputType=='secVtx_novtxmass':
+      return (kNumSecondaryVtx, 7)
+    elif inputType in ['secVtx_lxy', 'secVtx_sigmaxy', 'secVtx_dispersion', 'secVtx_chi2', 'secVtx_m', 'secVtx_significantlxy']:
       return (kNumSecondaryVtx,)
-    elif inputType in ['secVtx_lxy_2D', 'secVtx_sigmaxy_2D', 'secVtx_dispersion_2D', 'secVtx_chi2_2D', 'secVtx_l_2D', 'secVtx_significantlxy_2D']:
+    elif inputType in ['secVtx_lxy_2D', 'secVtx_sigmaxy_2D', 'secVtx_dispersion_2D', 'secVtx_chi2_2D', 'secVtx_m_2D', 'secVtx_significantlxy_2D']:
       return (kNumSecondaryVtx, 1)
     elif inputType=='production_vertices':
       return (kNumConstituents, 3)
@@ -416,6 +684,8 @@ class AliMLJetDataGenerator:
       jet_constituents = numpy.zeros(shape=(kNumConstituents, 6)) # 4 pid signals, jt ,r
     elif mode == 7:
       jet_constituents = numpy.zeros(shape=(kNumConstituents, 3)) # impact parameters, charge sign * jt
+    elif mode == 8:
+      jet_constituents = numpy.zeros(shape=(kNumConstituents, 4)) # 4 pid signals
 
     ##### Get sorted constituents and their quantities if not already cached
     constList = [jet.GetJetConstituent(i) for i in range(jet.GetNumbersOfConstituents())]
@@ -465,14 +735,22 @@ class AliMLJetDataGenerator:
       elif mode == 6:
         jet_constituents[j][0] = self.fCache['jetConsts.jt'][j]
         jet_constituents[j][1] = self.fCache['jetConsts.deltaR'][j] # R
-        jet_constituents[j][2] = jet.GetJetConstituent(j).PID().SignalITS()
-        jet_constituents[j][3] = jet.GetJetConstituent(j).PID().SignalTPC()
-        jet_constituents[j][4] = jet.GetJetConstituent(j).PID().SignalTOF()
+        # Apply some prescaling
+        jet_constituents[j][2] = jet.GetJetConstituent(j).PID().SignalITS()/150.
+        jet_constituents[j][3] = jet.GetJetConstituent(j).PID().SignalTPC()/100.
+        jet_constituents[j][4] = jet.GetJetConstituent(j).PID().SignalTOF()/40000.
         jet_constituents[j][5] = jet.GetJetConstituent(j).PID().SignalTRD()
       elif mode == 7:
         jet_constituents[j][0] = jet.GetJetConstituent(j).ImpactParameterD()
         jet_constituents[j][1] = jet.GetJetConstituent(j).ImpactParameterZ()
         jet_constituents[j][2] = jet.GetJetConstituent(j).Charge() * self.fCache['jetConsts.jt'][j]
+      elif mode == 8:
+        # Apply some prescaling
+        jet_constituents[j][0] = jet.GetJetConstituent(j).PID().SignalITS()/150.
+        jet_constituents[j][1] = jet.GetJetConstituent(j).PID().SignalTPC()/100.
+        jet_constituents[j][2] = jet.GetJetConstituent(j).PID().SignalTOF()/40000.
+        jet_constituents[j][3] = jet.GetJetConstituent(j).PID().SignalTRD()
+
 
     return jet_constituents
 
@@ -483,8 +761,16 @@ class AliMLJetDataGenerator:
     # Fill the internal sec vtx. objects if not already cached
     if 'secondaryVertices' not in self.fCache:
       # Go through the full list of secondary vertices and select the most significant ones
-      secVtx = sorted([jet.GetSecondaryVertex(i) for i in range(jet.GetNumbersOfSecVertices())], key=lambda k: k.Dispersion(), reverse=False)
-      secondary_vertices = numpy.zeros(shape=(kNumSecondaryVtx,9))
+      if kSortModeSecondaryVertices == 0:
+        secVtx = sorted([jet.GetSecondaryVertex(i) for i in range(jet.GetNumbersOfSecVertices())], key=lambda k: k.Lxy(), reverse=True) # sorting with descending |Lxy|
+      elif kSortModeSecondaryVertices == 1:
+        secVtx = sorted([jet.GetSecondaryVertex(i) for i in range(jet.GetNumbersOfSecVertices())], key=lambda k: k.Dispersion(), reverse=False) # sorting with ascending dispersion (default)
+      elif kSortModeSecondaryVertices == 2:
+        secVtx = sorted([jet.GetSecondaryVertex(i) for i in range(jet.GetNumbersOfSecVertices())], key=lambda k: k.Lxy()/k.SigmaLxy(), reverse=True) # sorting with descending SLxy
+      elif kSortModeSecondaryVertices == 3:
+        secVtx = sorted([jet.GetSecondaryVertex(i) for i in range(jet.GetNumbersOfSecVertices())], key=lambda k: k.Chi2(), reverse=False) # sorting with ascending Chi2
+
+      secondary_vertices = numpy.zeros(shape=(kNumSecondaryVtx,8))
       acceptedVtx = 0
       for j in range(0, min(kNumSecondaryVtx, jet.GetNumbersOfSecVertices())):
         if secVtx[j].Chi2() <= 1e-12:
@@ -498,8 +784,17 @@ class AliMLJetDataGenerator:
         secondary_vertices[acceptedVtx][4] = secVtx[j].Chi2()
         secondary_vertices[acceptedVtx][5] = secVtx[j].Dispersion()
         secondary_vertices[acceptedVtx][6] = secVtx[j].SigmaLxy()
-        secondary_vertices[acceptedVtx][7] = math.sqrt((secVtx[j].Vx() - jet.VertexX())*(secVtx[j].Vx() - jet.VertexX()) + (secVtx[j].Vy() - jet.VertexY())*(secVtx[j].Vy() - jet.VertexY()) + (secVtx[j].Vz() - jet.VertexZ())*(secVtx[j].Vz() - jet.VertexZ()))
-        secondary_vertices[acceptedVtx][8] = secVtx[j].Mass()
+        secondary_vertices[acceptedVtx][7] = secVtx[j].Mass()
+
+        if kSecondaryVertexPrescaling:
+          secondary_vertices[acceptedVtx][0] /= 3
+          secondary_vertices[acceptedVtx][1] /= 3
+          secondary_vertices[acceptedVtx][2] /= 10
+          secondary_vertices[acceptedVtx][3] /= 3
+          secondary_vertices[acceptedVtx][4] /= 1000
+          secondary_vertices[acceptedVtx][5] /= 0.2
+          secondary_vertices[acceptedVtx][6] /= 10
+          secondary_vertices[acceptedVtx][7] /= 15
 
         acceptedVtx += 1
 
@@ -512,10 +807,10 @@ class AliMLJetDataGenerator:
     if useVtxMass:
       return self.GetListSecondaryVertices(jet)
     else:
-      secondary_vertices = numpy.zeros(shape=(kNumSecondaryVtx, 8))
+      secondary_vertices = numpy.zeros(shape=(kNumSecondaryVtx, 7))
       vtxList = self.GetListSecondaryVertices(jet)
       for i,vtx in enumerate(vtxList):
-        secondary_vertices[i] = vtxList[i][0:8]
+        secondary_vertices[i] = vtxList[i][0:7]
 
       return secondary_vertices
 
@@ -527,7 +822,7 @@ class AliMLJetDataGenerator:
       vtxProp = numpy.zeros(shape=(kNumSecondaryVtx))
 
     secVertices = self.GetListSecondaryVertices(jet)
-    propInd = [3, 6, 5, 4, 7] # Lxy, sigmaLxy, dispersion, chi2, L
+    propInd = [3, 6, 5, 4, 7] # Lxy, sigmaLxy, dispersion, chi2, mass
 
     for i,vtx in enumerate(secVertices):
       if in2D:

@@ -5,7 +5,7 @@ import ROOT
 
 
 ###############################################
-def CalculateTaggingRatesBinaryClassifier(model, scores, scores_ref, test_batch_size, verbose=0):
+def CalculateTaggingRatesBinaryClassifier(model, scores, scores_ref, test_batch_size, eff=1.0, refEff=1.0, verbose=0):
   """Show and return classification efficiencies when demanding different efficiencies in data_ref"""
   scores_ref = copy.deepcopy(scores_ref)
   scores_ref = numpy.sort(scores_ref, axis=0)
@@ -23,7 +23,7 @@ def CalculateTaggingRatesBinaryClassifier(model, scores, scores_ref, test_batch_
 
   if verbose == 1:
     for perc in ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9']:
-      print('At efficiency {:.1f}% (score < {:E}), tagging rate={:3.3f}%'.format(100.*float(perc), currentThresholds[perc], 100.*(float(tagged[perc])/float(len(scores)))))
+      print('At efficiency {:.1f}% (abs: {:2.3f}%)(score < {:E}), tagging rate={:3.4f}%, absolute rate={:3.4f}%'.format(100.*float(perc), 100.*float(perc)*refEff, currentThresholds[perc], 100.*(float(tagged[perc])/float(len(scores))), 100.*(float(tagged[perc])/float(len(scores)))*eff))
 
   return ([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],[float(tagged[perc])/len(scores) for perc in ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9']])
 

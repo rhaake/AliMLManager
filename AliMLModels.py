@@ -3,9 +3,8 @@ from keras.layers import LSTM, Dense, Dropout, Activation, Conv1D, MaxPooling1D,
 from keras.layers.merge import concatenate
 from keras.models import Model, load_model
 from keras.callbacks import History, EarlyStopping
-from keras.regularizers import l2
+from keras.regularizers import l1_l2, l1, l2
 from keras.utils import plot_model
-from keras.layers.normalization import BatchNormalization
 import keras.backend as K
 
 import sys, os, math, numpy, cPickle, logging
@@ -61,6 +60,7 @@ class AliMLKerasModel:
     self.fFinalLayerNumLayers = 3
     self.fFinalLayerNumNeuronsPerLayer = 512
     self.fFinalLayerDropout = 0.5
+    self.fFinalLayerRegularization = 'elasticnet'
     self.fFinalLayerActivation = 'relu'
     # Model properties
     self.fOptimizer = 'SGD'
@@ -124,16 +124,25 @@ class AliMLKerasModel:
     else:
       modelOutput = self.fTempModelBranches[0]
 
+    if self.fFinalLayerRegularization == 'elasticnet':
+      regul = l1_l2(0.001)
+    elif self.fFinalLayerRegularization == 'ridge':
+      regul = l2(0.001)
+    elif self.fFinalLayerRegularization == 'lasso':
+      regul = l1(0.001)
+    else:
+      raise ValueError('Regularization mode {:s} not recognized'.format(self.fFinalLayerRegularization))
+
     # Add final vanilla dense layer
     if self.fFinalLayerStructure == []:
       for i in range(self.fFinalLayerNumLayers):
-        modelOutput = Dense(self.fFinalLayerNumNeuronsPerLayer, activation=self.fFinalLayerActivation, kernel_initializer=self.fInit, kernel_regularizer=l2(0.01), name='Final_{:d}_{:d}_activation_{:s}_regL2_0.01'.format(i, self.fFinalLayerNumNeuronsPerLayer, self.fFinalLayerActivation))(modelOutput)
+        modelOutput = Dense(self.fFinalLayerNumNeuronsPerLayer, activation=self.fFinalLayerActivation, kernel_initializer=self.fInit, kernel_regularizer=regul, name='Final_{:d}_{:d}_activation_{:s}_regularization_{:s}'.format(i, self.fFinalLayerNumNeuronsPerLayer, self.fFinalLayerActivation, self.fFinalLayerRegularization))(modelOutput)
 
         if self.fFinalLayerDropout:
           modelOutput = Dropout(self.fFinalLayerDropout, name='Final_{:d}_{:3.2f}'.format(i, self.fFinalLayerDropout))(modelOutput)
     else:
       for i, nNodes in enumerate(self.fFinalLayerStructure):
-        modelOutput = Dense(nNodes, activation=self.fFinalLayerActivation, kernel_initializer=self.fInit, kernel_regularizer=l2(0.01), name='Final_{:d}_{:d}_activation_{:s}_regL2_0.01'.format(i, self.fFinalLayerNumNeuronsPerLayer, self.fFinalLayerActivation))(modelOutput)
+        modelOutput = Dense(nNodes, activation=self.fFinalLayerActivation, kernel_initializer=self.fInit, kernel_regularizer=regul, name='Final_{:d}_{:d}_activation_{:s}_regularization_{:s}'.format(i, self.fFinalLayerNumNeuronsPerLayer, self.fFinalLayerActivation, self.fFinalLayerRegularization))(modelOutput)
 
         if self.fFinalLayerDropout:
           modelOutput = Dropout(self.fFinalLayerDropout, name='Final_{:d}_{:3.2f}'.format(i, self.fFinalLayerDropout))(modelOutput)
@@ -163,7 +172,7 @@ class AliMLKerasModel:
     # Early stopping
     #callbacks.append(EarlyStopping(monitor='val_loss', patience=4))
     # Learning rate reduction on plateau
-    callbacks.append(keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=20, verbose=0))
+    # callbacks.append(keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=20, verbose=0))
 
     if model == None:
       model = self.fModel
@@ -226,17 +235,28 @@ class AliMLKerasModel:
 
 
   ###############################################
-  def AddBranchDense(self, nLayers, nNeuronsPerLayer, dropout, inputType, activation='relu'):
+  def AddBranchDense(self, nLayers, nNeuronsPerLayer, dropout, inputType, activation='relu', regularization='off'):
     self.fRequestedData.append(inputType)
     branchID = len(self.fTempModelBranches)
+
+    if regularization   == 'elasticnet':
+      regul = l1_l2(0.001)
+    elif regularization == 'ridge':
+      regul = l2(0.001)
+    elif regularization == 'lasso':
+      regul = l1(0.001)
+    elif regularization == 'off':
+      regul = None
+    else:
+      raise ValueError('Regularization mode {:s} not recognized'.format(regul))
 
     # Create fully-connected layers
     inputLayer = Input(shape=self.fDataGenerator.GetDataTypeShape(inputType), name='B{:d}_FC_{:s}'.format(branchID, inputType))
     for i in range(nLayers):
       if i==0:
-        model = Dense(nNeuronsPerLayer, activation=activation, kernel_initializer=self.fInit, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, nNeuronsPerLayer, activation, inputType))(inputLayer)
+        model = Dense(nNeuronsPerLayer, activation=activation, kernel_initializer=self.fInit, kernel_regularizer=regul, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, nNeuronsPerLayer, activation, inputType))(inputLayer)
       else:
-        model = Dense(nNeuronsPerLayer, activation=activation, kernel_initializer=self.fInit, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, nNeuronsPerLayer, activation, inputType))(model)
+        model = Dense(nNeuronsPerLayer, activation=activation, kernel_initializer=self.fInit, kernel_regularizer=regul, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, nNeuronsPerLayer, activation, inputType))(model)
 
       if dropout:
         model = Dropout(dropout, name='B{:d}_FC_{:d}_{:3.2f}'.format(branchID, i, dropout))(model)
@@ -247,17 +267,28 @@ class AliMLKerasModel:
     self.fTempModelBranches.append(model)
 
   ###############################################
-  def AddBranchDenseCustom(self, layers, dropout, inputType, activation='relu'):
+  def AddBranchDenseCustom(self, layers, dropout, inputType, activation='relu', regularization='off'):
     self.fRequestedData.append(inputType)
     branchID = len(self.TempfModelBranches)
+
+    if regularization   == 'elasticnet':
+      regul = l1_l2(0.001)
+    elif regularization == 'ridge':
+      regul = l2(0.001)
+    elif regularization == 'lasso':
+      regul = l1(0.001)
+    elif regularization == 'off':
+      regul = None
+    else:
+      raise ValueError('Regularization mode {:s} not recognized'.format(regul))
 
     # Create fully-connected layers
     inputLayer = Input(shape=self.fDataGenerator.GetDataTypeShape(inputType), name='B{:d}_FC_{:s}'.format(branchID, inputType))
     for i in range(len(layers)):
       if i==0:
-        model = Dense(layers[i], activation=activation, kernel_initializer=self.fInit, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, layers[i], activation, inputType))(inputLayer)
+        model = Dense(layers[i], activation=activation, kernel_initializer=self.fInit, kernel_regularizer=regul, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, layers[i], activation, inputType))(inputLayer)
       else:
-        model = Dense(layers[i], activation=activation, kernel_initializer=self.fInit, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, layers[i], activation, inputType))(model)
+        model = Dense(layers[i], activation=activation, kernel_initializer=self.fInit, kernel_regularizer=regul, name='B{:d}_FC_{:d}_{:d}_activation_{:s}'.format(branchID, i, layers[i], activation, inputType))(model)
 
       if dropout:
         model = Dropout(dropout, name='B{:d}_FC_{:d}_{:3.2f}'.format(branchID, i, dropout))(model)
@@ -298,9 +329,9 @@ class AliMLKerasModel:
     inputLayer = Input(shape=self.fDataGenerator.GetDataTypeShape(inputType), name='B{:d}_LC1D_{:s}'.format(branchID, inputType))
     for i in range(0, len(seqConvFilters)):
       if i==0:
-        model = LocallyConnected1D(seqConvFilters[i], seqKernelSizes[i], activation=activation, kernel_initializer=self.fInit, strides=subsampling, padding='valid', name='B{:d}_LC1D_{:d}_Kernels{}_Stride_{:d}_activation_{:s}'.format(branchID, i, seqKernelSizes, subsampling, activation))(inputLayer)
+        model = LocallyConnected1D(seqConvFilters[i], seqKernelSizes[i], activation=activation, kernel_initializer=self.fInit, strides=subsampling, padding='valid', name=self.GetCompatibleName('B{:d}_LC1D_{:d}_Kernels{}_Stride_{:d}_activation_{:s}'.format(branchID, i, seqKernelSizes, subsampling, activation)))(inputLayer)
       else:
-        model = LocallyConnected1D(seqConvFilters[i], seqKernelSizes[i], activation=activation, kernel_initializer=self.fInit, padding='valid', name='B{:d}_LC1D_{:d}_Kernels{}_activation_{:s}'.format(branchID, i, seqKernelSizes, activation))(model)
+        model = LocallyConnected1D(seqConvFilters[i], seqKernelSizes[i], activation=activation, kernel_initializer=self.fInit, padding='valid', name=self.GetCompatibleName('B{:d}_LC1D_{:d}_Kernels{}_activation_{:s}'.format(branchID, i, seqKernelSizes, activation)))(model)
 
       if seqMaxPoolings[i] > 0:
         model = MaxPooling1D(pool_size=seqMaxPoolings[i], name='B{:d}_LC1D_{:d}_{}'.format(branchID, i, seqMaxPoolings[i]))(model)
@@ -401,19 +432,21 @@ class AliMLKerasModel:
     self.fTempModelBranches.append(model)
 
   ###############################################
-  def SetFinalLayer(self, nLayers, nNeuronsPerLayer, dropout, activation='relu'):
+  def SetFinalLayer(self, nLayers, nNeuronsPerLayer, dropout, regularization='ridge', activation='relu'):
     self.fFinalLayerStructure = []
     self.fFinalLayerNumLayers = nLayers
     self.fFinalLayerNumNeuronsPerLayer = nNeuronsPerLayer
     self.fFinalLayerDropout = dropout
+    self.fFinalLayerRegularization = regularization
     self.fFinalLayerActivation = activation
 
   ###############################################
-  def SetFinalLayerVariable(self, layers, dropout, activation='relu'):
+  def SetFinalLayerVariable(self, layers, dropout, regularization='ridge', activation='relu'):
     self.fFinalLayerStructure = layers
     self.fFinalLayerNumLayers = 0
     self.fFinalLayerNumNeuronsPerLayer = 0
     self.fFinalLayerDropout = dropout
+    self.fFinalLayerRegularization = regularization
     self.fFinalLayerActivation = activation
 
   ###############################################

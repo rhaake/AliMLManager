@@ -28,6 +28,7 @@ class AliMLDataLoader:
     self.fClasses = []
     self.fRequestedData = requested_data
 
+    self.fVerbose = 1
     self.fProducedSamples    = 0
     self.fMaxProducedSamples = 10000000
     self.fNumSamplesPerChunk = numSamplesPerChunk
@@ -71,7 +72,8 @@ class AliMLDataLoader:
       raise ValueError('The weights for the class do not sum up to 1, but to {}'.format(totalWeight))
 
     # Set properties of the class (trees will be loaded later)
-    logging.info('Adding data class {:d}.'.format(len(self.fClasses)))
+    if self.fVerbose == 1:
+      logging.info('Adding data class {:d}.'.format(len(self.fClasses)))
     newClass = {}
     newClass['datasets'] = datasets
     newClass['indices']   = [0, ] * len(datasets)
@@ -214,7 +216,7 @@ class AliMLDataLoader:
 
         # Save raw data indices/trees for analysis
         # This is useful if you want to do something directly with the raw data
-        self.fRawDataIndices.append(self.fCurrentNumSamples)
+        self.fRawDataIndices.append(myClass['indices'][iData]-1)
 
         # Use the raw data to create the demanded sample
         currentTruth = None
@@ -234,7 +236,8 @@ class AliMLDataLoader:
         totalSamples += 1
 
       fileH.Close()
-      logging.info('Class {:d}: Created {:6d} events with dataset={:s}'.format(myClass['id'], samplesInDataset, dataset['treename']))
+      if self.fVerbose == 1:
+        logging.info('Class {:d}: Created {:6d} events with dataset={:s}'.format(myClass['id'], samplesInDataset, dataset['treename']))
 
     return totalSamples
 
@@ -267,7 +270,11 @@ class AliMLDataLoader:
 
     passed = True
     for cut in cuts:
-      sample = getattr(currentRawData, cut['branch']) # each cut must contain the branch it applies to
+      # if branch property is given, cuts will be applied on that branch
+      if 'branch' in cut.keys():
+        sample = getattr(currentRawData, cut['branch'])
+      else:
+        sample = currentRawData
       cutVar = getattr(sample, cut['var'])
       if callable(cutVar):
         cutVar = cutVar()
@@ -290,7 +297,7 @@ class AliMLDataLoader:
 
 
   ###############################################
-  def CreateTreeFromRawData(self, fname, tname, scores=None, filterList=None, rawDataIndices=None):
+  def CreateTreeFromRawData(self, fname, tname, filterList=None, rawDataIndices=None):
     """Raw data selected by data creation procedure
        The purpose of this function is to get a tree of raw data
        in parallel to the data samples for the learning task
@@ -313,16 +320,12 @@ class AliMLDataLoader:
     ofile   = ROOT.TFile(fname, 'update')
     outTree = chain.CloneTree(0)
     outTree.SetName(tname)
-    score   = numpy.zeros(1, dtype=float)
-    brScore = outTree.Branch('MLScores', score, 'Scores/D')
-
 
     ##### Loop through the chain and add raw samples to output tree
     for iSample, sampleIndex in enumerate(self.fRawDataIndices):
       if filterList != None and iSample not in filterList:
         continue
       chain.GetEntry(sampleIndex)
-      score[0] = scores[iSample]
       outTree.Fill()
 
     outTree.AutoSave()
